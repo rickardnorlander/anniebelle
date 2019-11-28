@@ -4,6 +4,10 @@
 
 Anniebelle displays an image when the system bell rings. This may be used in addition to or as a replacement to the audible bell.
 
+## Requirements 
+
+The project depends on gtk 3.
+
 ## Building
 
 Consider passing `--prefix=$HOME` to `./configure` to install in your home directory
