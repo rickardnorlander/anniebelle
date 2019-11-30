@@ -53,17 +53,17 @@ public:
     gtk_widget_set_visual(window, visual);
   }
   
-  gboolean repaint(cairo_t* cr) {
+  void repaint(cairo_t* cr) {
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     gdk_cairo_set_source_pixbuf(cr, buf, 0, 0);
     cairo_paint(cr);
   }
   
-  static void screen_changed(GtkWidget* widget, GdkScreen* old_screen, gpointer userdata) {
+  static void screen_changed(GtkWidget* /*widget*/, GdkScreen* /*old_screen*/, gpointer userdata) {
    ((BellDisplayer*)userdata)->set_visual();
   }
 
-  static gboolean draw(GtkWidget* widget, cairo_t* cr, gpointer userdata) {
+  static gboolean draw(GtkWidget* /*widget*/, cairo_t* cr, gpointer userdata) {
    ((BellDisplayer*)userdata)->repaint(cr);
     return false;  // Propagate event.
   }
@@ -93,7 +93,7 @@ public:
     g_source_attach((GSource*)this, NULL);
   }
 
-  static gboolean prepare(GSource* source, gint* timeout) {
+  static gboolean prepare(GSource* /*source*/, gint* timeout) {
     if (timeout) {
       *timeout = -1;
     }
@@ -219,6 +219,9 @@ int main(int argc, char** argv) {
     BellSource::prepare,
     BellSource::check,
     BellSource::dispatch,
+    nullptr,  // no finalize
+    nullptr,  // no closure callback
+    nullptr   // no closure marshal
   };
 
   
