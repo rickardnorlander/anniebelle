@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
   };
 
   int c;
-  while((c = getopt_long(argc, argv, "v", long_options, nullptr)) != -1) {
+  while((c = getopt_long(argc, argv, "", long_options, nullptr)) != -1) {
     switch(c){
     case 0:
       break;
