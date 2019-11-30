@@ -93,14 +93,6 @@ public:
     g_source_attach((GSource*)this, NULL);
   }
 
-  static gboolean prepare(GSource* /*source*/, gint* timeout) {
-    if (timeout) {
-      *timeout = -1;
-    }
-    // Do not skip polling this iteration.
-    return false;
-  }
-
   gboolean _check() {
     bool has_bell_event = false;
     while (XPending(display)) {
@@ -216,7 +208,7 @@ int main(int argc, char** argv) {
   BellDisplayer bell_displayer(buf);
 
   GSourceFuncs source_funcs = {
-    BellSource::prepare,
+    nullptr,  // no prepare
     BellSource::check,
     BellSource::dispatch,
     nullptr,  // no finalize
