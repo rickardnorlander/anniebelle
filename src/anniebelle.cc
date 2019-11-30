@@ -12,26 +12,29 @@
 class BellDisplayer {
   GdkPixbuf* buf;
   GtkWidget* window;
-  
+
 public:
   BellDisplayer(GdkPixbuf* _buf) {
     buf = _buf;
     int width = gdk_pixbuf_get_width(buf);
     int height = gdk_pixbuf_get_height(buf);
-    
+
+    // Key part! Tells window manager to step aside, disables
+    // decorations, hides it from the list of open windows etc.
     window = gtk_window_new(GTK_WINDOW_POPUP);
 
     gtk_widget_set_size_request(window, width, height);
     gtk_window_set_position(GTK_WINDOW(window), GTK_WIN_POS_CENTER);
 
+    // Tell gtk we are going to draw everything ourselves.
     gtk_widget_set_app_paintable(window, true);
     set_visual();
-    
+
     g_signal_connect(window, "draw", G_CALLBACK(draw), this);
     g_signal_connect(window, "screen-changed", G_CALLBACK(screen_changed), this);
-    
+
     gtk_widget_realize(window);
-    
+
     GdkWindow* gdk_window = gtk_widget_get_window(window);
 
     cairo_region_t* empty_region = cairo_region_create();
@@ -39,12 +42,13 @@ public:
         gdk_window, empty_region, 0, 0);
     cairo_region_destroy(empty_region);
   }
-  
+
   GtkWidget* get_window() {
     return window;
   }
 
   void set_visual() {
+    // Try to enable transparency.
     GdkScreen* screen = gtk_widget_get_screen(window);
     GdkVisual* visual = gdk_screen_get_rgba_visual(screen);
     if (!visual) {
@@ -52,15 +56,16 @@ public:
     }
     gtk_widget_set_visual(window, visual);
   }
-  
+
   void repaint(cairo_t* cr) {
     cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
     gdk_cairo_set_source_pixbuf(cr, buf, 0, 0);
     cairo_paint(cr);
   }
-  
+
   static void screen_changed(GtkWidget* /*widget*/, GdkScreen* /*old_screen*/, gpointer userdata) {
-   ((BellDisplayer*)userdata)->set_visual();
+    // We have to enable transparency again after screen changes.
+    ((BellDisplayer*)userdata)->set_visual();
   }
 
   static gboolean draw(GtkWidget* /*widget*/, cairo_t* cr, gpointer userdata) {
@@ -72,7 +77,7 @@ public:
 
 class BellSource {
 public:
-  // Has to be first member, so we can cast this to a source.
+  // Has to be first member, so we can cast BellSource to a source.
   GSource source;
   Display* display;
   GtkWidget* window;
@@ -127,19 +132,20 @@ public:
     }
     return has_bell_event;
   }
-  
+
   static gboolean check(GSource* source) {
     return ((BellSource*)source)->_check();
   }
-  
+
   gboolean _hide() {
     ++times_hidden;
     if (times_shown == times_hidden) {
       gtk_widget_hide(window);
     }
+    // Return false to request for the timer to be removed.
     return false;
   }
-  
+
   static gboolean hide(gpointer user_data) {
     return ((BellSource*)user_data)->_hide();
   }
@@ -150,7 +156,7 @@ public:
       gtk_widget_show(window);
     }
     ++times_shown;
-    g_timeout_add(200, hide,(gpointer)this);
+    g_timeout_add(200, hide, (gpointer)this);
     return true;
   }
 
@@ -207,12 +213,14 @@ int main(int argc, char** argv) {
     puts("anniebelle " PACKAGE_VERSION);
     return 0;
   }
+
+  // Exactly one positional argument with the filename.
   if (optind + 1 != argc) {
     usage();
     return 1;
   }
   const char* filename = argv[optind++];
-  
+
   int xkb_event_type;
   int major = XkbMajorVersion;
   int minor = XkbMinorVersion;
@@ -235,5 +243,6 @@ int main(int argc, char** argv) {
 
   gtk_main();
 
+  // Unreachable.
   return 0;
 }
