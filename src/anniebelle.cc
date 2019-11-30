@@ -3,6 +3,12 @@
 #include <getopt.h>
 #include <gtk/gtk.h>
 
+#if __has_include("config.h")
+#include "config.h"
+#else
+#define PACKAGE_VERSION "unknown version"
+#endif
+
 class BellDisplayer {
   GdkPixbuf* buf;
   GtkWidget* window;
@@ -181,7 +187,7 @@ int main(int argc, char** argv) {
     return 0;
   }
   if (option_version) {
-    puts("anniebelle 0.1.0");
+    puts("anniebelle " PACKAGE_VERSION);
     return 0;
   }
   if (optind + 1 != argc) {

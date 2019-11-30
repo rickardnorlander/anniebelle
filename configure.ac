@@ -2,7 +2,7 @@ AC_PREREQ([2.69])
 AC_INIT(anniebelle, 0.1.0)
 AM_INIT_AUTOMAKE
 AC_CONFIG_SRCDIR([src/anniebelle.cc])
-
+AC_CONFIG_HEADERS(config.h)
 AC_PROG_CXX
 
 AM_PATH_GTK_3_0([3.0.0],,AC_MSG_ERROR([Gtk+ 3.0.0 or higher required.]))
