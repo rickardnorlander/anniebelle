@@ -76,21 +76,39 @@ public:
   GSource source;
   Display* display;
   GtkWidget* window;
-  unsigned times_shown = 0;
-  unsigned times_hidden = 0;
+  unsigned times_shown;
+  unsigned times_hidden;
   int xkb_event_type;
 
-  void init(Display* _display, GtkWidget* _window, int _xkb_event_type) {
-    display = _display;
-    window = _window;
-    xkb_event_type = _xkb_event_type;
-    
-    XkbSelectEvents(display, XkbUseCoreKbd, XkbBellNotifyMask, XkbBellNotifyMask);
-   
-    auto xkb_fd = ConnectionNumber(display);
+  static BellSource* create(Display* _display, GtkWidget* _window, int _xkb_event_type) {
+    // I *think* it's fine to put this on the stack (meaning it will go away after
+    // function return), but the documentation is unclear so lets be safe.
+    static GSourceFuncs source_funcs = {
+      nullptr,  // no prepare
+      BellSource::check,
+      BellSource::dispatch,
+      nullptr,  // no finalize
+      nullptr,  // no closure callback
+      nullptr   // no closure marshal
+    };
+    GSource* source = g_source_new(&source_funcs, sizeof(BellSource));
+
+    // Initialize members
+    BellSource* bell_source = (BellSource*) source;
+    bell_source->display = _display;
+    bell_source->window = _window;
+    bell_source->times_shown = 0;
+    bell_source->times_hidden = 0;
+    bell_source->xkb_event_type = _xkb_event_type;
+
+    // Tell gtk to start polling for bell events.
+    XkbSelectEvents(_display, XkbUseCoreKbd, XkbBellNotifyMask, XkbBellNotifyMask);
+    auto xkb_fd = ConnectionNumber(_display);
     GIOCondition condition = (GIOCondition)(G_IO_IN | G_IO_HUP | G_IO_ERR);
-    g_source_add_unix_fd((GSource*)this, xkb_fd, condition);
-    g_source_attach((GSource*)this, NULL);
+    g_source_add_unix_fd(source, xkb_fd, condition);
+    g_source_attach(source, NULL);
+
+    return bell_source;
   }
 
   gboolean _check() {
@@ -206,19 +224,7 @@ int main(int argc, char** argv) {
   }
 
   BellDisplayer bell_displayer(buf);
-
-  GSourceFuncs source_funcs = {
-    nullptr,  // no prepare
-    BellSource::check,
-    BellSource::dispatch,
-    nullptr,  // no finalize
-    nullptr,  // no closure callback
-    nullptr   // no closure marshal
-  };
-
-  
-  GSource* bell_source = g_source_new(&source_funcs, sizeof(BellSource));
-  ((BellSource*)bell_source)->init(display, bell_displayer.get_window(), xkb_event_type);
+  BellSource::create(display, bell_displayer.get_window(), xkb_event_type);
 
   gtk_main();
 
