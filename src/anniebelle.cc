@@ -166,6 +166,13 @@ void usage() {
 }
 
 int main(int argc, char** argv) {
+  // Catch this before gtk_init does, so we can control the error message.
+  const char* env_display = getenv("DISPLAY");
+  if (!env_display || !*env_display) {
+    fprintf(stderr, "Environment variable DISPLAY is not set. Can't connect to x server\n");
+    exit(1);
+  }
+
   gtk_init(&argc, &argv);
 
   int option_help = 0;
