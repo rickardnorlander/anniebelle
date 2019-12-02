@@ -174,9 +174,20 @@ void usage() {
 int main(int argc, char** argv) {
   // Catch this before gtk_init does, so we can control the error message.
   const char* env_display = getenv("DISPLAY");
-  if (!env_display || !*env_display) {
+  if (env_display == nullptr || env_display[0] == '\0') {
     fprintf(stderr, "Environment variable DISPLAY is not set. Can't connect to x server\n");
     exit(1);
+  }
+
+  // Anniebelle doesn't work well under Wayland so
+  // use x11 backend by default.
+  const char* env_gdk_backend = getenv("GDK_BACKEND");
+  if (env_gdk_backend == nullptr || env_gdk_backend[0] == '\0') {
+    // Set GDK_BACKEND to x11 if unset or set to empty string.
+    if (setenv("GDK_BACKEND", "x11", /*overwrite=*/1) != 0) {
+      perror("Setting GDK_BACKEND=x11");
+      exit(1);
+    }
   }
 
   gtk_init(&argc, &argv);
